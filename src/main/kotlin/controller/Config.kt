@@ -9,6 +9,7 @@ class Config {
     var connString = ""
     var debug = false
     var autoCommit = false
+    var numberOfRows = ""
     init {
         val prop = Properties()
         val fileInputStream = this::class.java.getClassLoader().getResourceAsStream("config.properties")
@@ -19,6 +20,7 @@ class Config {
         env = prop.getProperty("env")
         debug = prop.getProperty("debug") == "yes"
         autoCommit = prop.getProperty("autoCommit") == "true"
+        numberOfRows = prop.getProperty("numberOfRows")
         connString = "jdbc:as400://$server;naming=system;errors=full;translate=1"
     }
 }
