@@ -1,0 +1,69 @@
+Index: src/main/kotlin/controller/Config.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package controller\nimport java.util.*\n\nclass Config {\n    var server = \"\"\n    var user = \"\"\n    var password = \"\"\n    var env = \"\"\n    var connString = \"\"\n    var debug = false\n    var autoCommit = false\n    init {\n        val prop = Properties()\n        val fileInputStream = this::class.java.getClassLoader().getResourceAsStream(\"config.properties\")\n        prop.load(fileInputStream)\n        server = prop.getProperty(\"server\")\n        user = prop.getProperty(\"user\")\n        password = prop.getProperty(\"password\")\n        env = prop.getProperty(\"env\")\n        debug = prop.getProperty(\"debug\") == \"yes\"\n        autoCommit = prop.getProperty(\"autoCommit\") == \"true\"\n        connString = \"jdbc:as400://$server;naming=system;errors=full;translate=1\"\n    }\n}\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/kotlin/controller/Config.kt	(revision 0579f99922f6ce0e4faebd92d9a7490044284b07)
++++ src/main/kotlin/controller/Config.kt	(date 1599198980411)
+@@ -9,6 +9,7 @@
+     var connString = ""
+     var debug = false
+     var autoCommit = false
++    var numberOfRows = 0
+     init {
+         val prop = Properties()
+         val fileInputStream = this::class.java.getClassLoader().getResourceAsStream("config.properties")
+@@ -19,6 +20,7 @@
+         env = prop.getProperty("env")
+         debug = prop.getProperty("debug") == "yes"
+         autoCommit = prop.getProperty("autoCommit") == "true"
++        numberOfRows = prop.getProperty("numberOfRows").toInt()
+         connString = "jdbc:as400://$server;naming=system;errors=full;translate=1"
+     }
+ }
+Index: src/main/kotlin/controller/DB.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package controller\nimport com.ibm.as400.access.AS400JDBCConnectionImpl\nimport java.sql.Connection\nimport java.sql.DriverManager\nimport java.sql.ResultSet\n\nprivate val Int.DB: Array<DB>\n    get() = Array(this) { DB() }\n\nclass DB(conf: Config? = null) {\n\n    private val config = conf ?: Config()\n\n    val dummy = Class.forName(\"com.ibm.as400.access.AS400JDBCDriver\")\n    lateinit var conn : Connection\n\n\n    fun se(env: String? = null) = runCommand(\"PKTOOL/SE ${env ?: config.env.toUpperCase()}\")\n\n    fun runCommand(command: String) = runQuery(\"CALL QSYS2.QCMDEXC('$command')\")\n\n    fun runQuery(query: String) = conn.createStatement().execute(query)\n\n    fun fetchRows(query: String): ResultSet = conn.createStatement().executeQuery(query)\n\n    fun arrayDB(num: Int): Array<DB> = num.DB\n\n    fun close() = conn.close()\n\n    fun writeData(inputValue: String) = println(inputValue)\n\n    private fun debug() = runCommand(\"strdbg\")\n\n    fun getJobInfo(): String {\n        val jobString = (conn as AS400JDBCConnectionImpl).serverJobIdentifier\n        val name = jobString[0..10].trim()\n        val user = jobString[10..20].trim()\n        val number = jobString[20..26].trim()\n        return \"$number/$user/$name\"\n        println(\"asdsdas\"[1..2])\n\n    }\n\n    init {\n        conn =  DriverManager.getConnection(config.connString, config.user, config.password)\n        se()\n        conn.autoCommit = config.autoCommit\n        if (config.debug) debug()\n    }\n}\n\noperator fun String.get(intRange: IntRange) = substring(intRange)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/kotlin/controller/DB.kt	(revision 0579f99922f6ce0e4faebd92d9a7490044284b07)
++++ src/main/kotlin/controller/DB.kt	(date 1599210318797)
+@@ -1,5 +1,6 @@
+ package controller
+ import com.ibm.as400.access.AS400JDBCConnectionImpl
++import javafx.beans.property.SimpleIntegerProperty
+ import java.sql.Connection
+ import java.sql.DriverManager
+ import java.sql.ResultSet
+@@ -9,11 +10,10 @@
+ 
+ class DB(conf: Config? = null) {
+ 
+-    private val config = conf ?: Config()
+-
++    private var config :Config = conf ?: Config()
++    var numberOfRows = SimpleIntegerProperty(config.numberOfRows)
+     val dummy = Class.forName("com.ibm.as400.access.AS400JDBCDriver")
+-    lateinit var conn : Connection
+-
++    var conn =  DriverManager.getConnection(config.connString, config.user, config.password)
+ 
+     fun se(env: String? = null) = runCommand("PKTOOL/SE ${env ?: config.env.toUpperCase()}")
+ 
+@@ -37,12 +37,9 @@
+         val user = jobString[10..20].trim()
+         val number = jobString[20..26].trim()
+         return "$number/$user/$name"
+-        println("asdsdas"[1..2])
+-
+     }
+ 
+     init {
+-        conn =  DriverManager.getConnection(config.connString, config.user, config.password)
+         se()
+         conn.autoCommit = config.autoCommit
+         if (config.debug) debug()

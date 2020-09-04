@@ -45,7 +45,7 @@ class MainPanelController : Controller() {
 
         var header = listOf<String>()
         println(DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
-        if (! query.toUpperCase().contains("LIMIT")) query += " limit ${db.numberOfRows.value}"
+        if (! query.toUpperCase().contains("LIMIT")) query += " limit ${db.numberOfRows}"
         val rs = db.fetchRows(query)
         while (rs.next()) {
             if (linesProperty.value == 0) {
