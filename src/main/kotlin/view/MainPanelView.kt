@@ -1,42 +1,54 @@
 package view
 
 import controller.MainPanelController
+import javafx.concurrent.Task
 import javafx.geometry.Orientation
 import javafx.scene.control.TableView
-import javafx.scene.control.TextArea
 import tornadofx.*
 
 typealias Row = MutableMap<String, String>
 
-class MainPanelView : View("Dynamic Table View") {
+class MainPanelView : View("iQ400") {
     private val controller: MainPanelController by inject()
-    var table : TableView<Row>
-    var textArea :TextArea
-    init {
-        table= TableView<Row>()
-        textArea = TextArea()
-        textArea.text = "SE W6QE"
-        textArea.text = "select * from CDCART00"
-        textArea.apply {
-
-        }
-        shortcut("Meta+Enter") {
-            runAsync { controller.loadQueryToTableView(textArea.text) }
-        }
-    }
+    var table: TableView<Row> by singleAssign()
+    var query = stringProperty("")
+    var x: Task<Unit>? = null
 
     override val root = borderpane {
-
         top = label("File")
 
-        center = splitpane{
-            orientation = Orientation.VERTICAL
-            add(textArea)
-            add(table)
+        center = splitpane(Orientation.VERTICAL) {
+            textarea("select * from CDCART00") {
+                //editableProperty()
+                isUndoable
+                //text = "select * from CDCART00"
+                //query.value = text
+                //textProperty().bind(query)
+                shortcut("Meta+Enter") {
+                    table.items.clear()
+                    table.columns.clear()
+                    if (x != null) x?.cancel()
+                    x = runAsync {
+                        controller.reset()
+                        controller.loadQueryToTableView(text)
+                    }
+                }
+            }
+            table = tableview {
+                onUserSelect(clickCount = 1) { persona ->
+                    println(persona)
+                }
+            }
         }
 
         bottom = hbox {
-            label(controller.statusToView)
+            label(controller.statusToView) {
+                padding = insets(horizontal = 10)
+            }
         }
+    }
+
+    init {
+
     }
 }

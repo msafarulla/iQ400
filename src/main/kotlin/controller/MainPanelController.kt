@@ -1,12 +1,16 @@
 package controller
 
+import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleLongProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.scene.control.TableColumn
 import javafx.stage.FileChooser
 import javafx.util.Callback
-import tornadofx.*
+import tornadofx.Controller
+import tornadofx.enableCellEditing
+import tornadofx.makeEditable
+import tornadofx.runLater
 import view.MainPanelView
 import view.Row
 import java.sql.ResultSet
@@ -14,14 +18,15 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 import kotlin.collections.set
 
-val db = DB()
 
+
+val db = DB()
 class MainPanelController : Controller() {
     private val view: MainPanelView by inject()
-    private val separator = SimpleStringProperty(",").value
-    val linesProperty = SimpleLongProperty(0L)
-    val statusToView = SimpleStringProperty("")
+    var linesProperty = SimpleIntegerProperty(0)
+    var statusToView = SimpleStringProperty("")
     var currentFilePath: String = ""
+    //lateinit var rs:ResultSet
 
     fun openLoadingDialog() {
         val fileChooser = FileChooser()
@@ -38,32 +43,32 @@ class MainPanelController : Controller() {
             return
         }
 
-
         var header = listOf<String>()
         println(DateTimeFormatter.ISO_INSTANT.format(Instant.now()))
-        val rs = db.fetchRows(query + " limit 500000")
+        if (! query.toUpperCase().contains("LIMIT")) query += " limit ${db.numberOfRows.value}"
+        val rs = db.fetchRows(query)
         while (rs.next()) {
-
-            if (linesProperty.value==0L) {
+            if (linesProperty.value == 0) {
                 val mapping = mutableMapOf<String, String>()
                 header = headers(rs)
                 for ((heading1, heading2) in header zip header) {
                     mapping[heading1] = heading2
                 }
                 runLater {
-                        view.table.items.clear()
-                        view.table.columns.clear()
-                        view.table.columns.addAll(getColumns(mapping))
+                    view.table.items.clear()
+                    view.table.columns.clear()
+                    view.table.columns.addAll(getColumns(mapping))
                 }
             }
-
+            linesProperty.value++
             val mapping = mutableMapOf<String, String>()
             for ((heading, lineElement) in header zip elements(rs)) {
                 mapping[heading] = lineElement
             }
+
             runLater {
                 populateToTable(mapping)
-                statusToView.value = linesProperty.value++.toString() + " rows retrieved."
+                statusToView.value = linesProperty.value.toString() + " rows retrieved."
             }
 
 
@@ -72,12 +77,16 @@ class MainPanelController : Controller() {
 
     }
 
+    fun reset() {
+        runLater {  linesProperty.value = 0
+        statusToView.value = ""}
+    }
+
     fun headers(rs: ResultSet): List<String> {
-        var header = listOf<String>()
+        val header = mutableListOf<String>()
         for (i in 1..rs.metaData.columnCount)
             header += rs.metaData.getColumnName(i)
         return header
-
     }
 
     fun elements(rs: ResultSet): List<String> {

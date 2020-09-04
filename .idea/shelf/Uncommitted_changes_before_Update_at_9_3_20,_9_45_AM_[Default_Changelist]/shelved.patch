@@ -1,0 +1,14 @@
+Index: src/main/resources/config.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>server=a001\nuser=D4XP\npassword=3#pomiray\nenv=W4PL\nautoCommit=true\ndebug=no\n#A001_ip = 10.16.186.84\n#A005_ip = 10.16.186.89\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/resources/config.properties	(revision bf98edb5eabd43d1c74b25f141374559f01d63dd)
++++ src/main/resources/config.properties	(date 1599151189145)
+@@ -6,3 +6,4 @@
+ debug=no
+ #A001_ip = 10.16.186.84
+ #A005_ip = 10.16.186.89
++#
